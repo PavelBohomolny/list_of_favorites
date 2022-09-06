@@ -7,57 +7,52 @@
 
 import SwiftUI
 
-struct Movie: Identifiable, Hashable {
-    let id = UUID()
-    var title: String
-    var year: String
+struct Movie: Identifiable {
+    var id = UUID()
+    let title: String
+    let year: String
 }
 
-extension Sequence where Element: Hashable {
-    func uniqued() -> [Element] {
-        var set = Set<Element>()
-        return filter { set.insert($0).inserted }
-    }
-}
-
-class Model: ObservableObject {
+class MoviesViewModel: ObservableObject {
     @Published var movies: [Movie] = []
 }
 
 struct DynamicList: View {
     
-    @StateObject var model = Model()
+    @State var boolValue = false
+    @StateObject var viewModel = MoviesViewModel()
     @State var text = ""
     @State var year = ""
     
     var body: some View {
-        VStack {
-            Section() {
-                TextField("Title", text: $text)
+            VStack {
+                Section() {
+                    TextField("Title", text: $text)
+                        .padding()
+                        .border(.gray)
+                    TextField("Year", text: $year)
+                        .padding()
+                        .border(.gray)
+                        .keyboardType(.numberPad)
+                    Button(action: {
+                        self.addToList()
+                    }, label: {
+                        Text("Add")
+                            .frame(width: 80, height: 40, alignment: .center)
+                            .background(Color.blue)
+                            .cornerRadius(8)
+                            .foregroundColor(.white)
+                    })
                     .padding()
-                    .border(.gray)
-                TextField("Year", text: $year)
-                    .padding()
-                    .border(.gray)
-                    .keyboardType(.numberPad)
-                Button(action: {
-                    self.addToList()
-                }, label: {
-                    Text("Add")
-                        .frame(width: 80, height: 40, alignment: .center)
-                        .background(Color.blue)
-                        .cornerRadius(8)
-                        .foregroundColor(.white)
-                })
-                .padding()
-            }
-            List {
-                ForEach(model.movies.uniqued()) { movie in
-                    MovieRow(title: movie.title, year: movie.year)
+                }
+                // Show the data in list form
+                List {
+                    ForEach(viewModel.movies) { movie in
+                        MovieRow(title: movie.title, year: movie.year)
+                    }
                 }
             }
-        }
-        .padding()
+            .padding()
     }
     
     func addToList() {
@@ -69,11 +64,23 @@ struct DynamicList: View {
             return
         }
         
+        
+        // Condition to check whether the data is already exit or not
+        boolValue = false
         let newMovie = Movie(title: text, year: year)
-        model.movies.append(newMovie)
-        text = ""
-        year = ""
+        for movie in viewModel.movies{
+            if ((movie.title.contains(text)) && (movie.year.contains(year))){
+                boolValue = true
+            }
+        }
+        // check if boolValue is false so the data will store into the array.
+        if boolValue == false{
+            viewModel.movies.append(newMovie)
+            text = ""
+            year = ""
+        }
     }
+    
 }
 
 struct MovieRow: View {
@@ -81,15 +88,23 @@ struct MovieRow: View {
     let year: String
     
     var body: some View {
-        Label (
-            title: { Text(title + " " + year)},
-            icon: { Image(systemName: "film") }
-        )
+        // Show the data insert into the textfield
+        HStack{
+            Label (
+                title: { Text(title)},
+                icon: { Image(systemName: "film") }
+            )
+            Spacer()
+            Label (
+                title: { Text(year)},
+                icon: { Image(systemName: "calendar") }
+            )
+        }
     }
 }
 
 struct DynamicList_Previews: PreviewProvider {
     static var previews: some View {
-        DynamicList()
+        ContentView()
     }
 }
